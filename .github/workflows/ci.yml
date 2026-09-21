@@ -32,6 +32,25 @@ jobs:
       - name: Build extension
         run: npm run build
 
+      - name: No leftover branding or credentials in sources
+        working-directory: .
+        run: |
+          # Guard against re-introducing a site-specific default or a pasted key:
+          # the extension ships to strangers and must stay vendor-neutral.
+          if git grep -nIE 'abertay|mylearningspace|sk-[A-Za-z0-9]{16,}|gsk_[A-Za-z0-9]{16,}|x-api-key: [A-Za-z0-9]' -- . ':!CHANGELOG.md'; then
+            echo "::error::found a site-specific default or a credential-looking string in tracked files"
+            exit 1
+          fi
+          echo "sources are clean"
+
+      - name: Verify the built bundle is free of them too
+        run: |
+          if grep -rlIE 'abertay|mylearningspace' dist; then
+            echo "::error::the built bundle is stale — rebuild before publishing"
+            exit 1
+          fi
+          echo "bundle is clean"
+
       - name: Verify the built manifest
         run: |
           node -e '
