@@ -37,7 +37,10 @@ jobs:
         run: |
           # Guard against re-introducing a site-specific default or a pasted key:
           # the extension ships to strangers and must stay vendor-neutral.
-          if git grep -nIE 'abertay|mylearningspace|sk-[A-Za-z0-9]{16,}|gsk_[A-Za-z0-9]{16,}|x-api-key: [A-Za-z0-9]' -- . ':!CHANGELOG.md'; then
+          # This workflow file itself is excluded — it holds the very patterns it
+          # searches for, and would otherwise always match.
+          if git grep -nIE 'abertay|mylearningspace|sk-[A-Za-z0-9]{16,}|gsk_[A-Za-z0-9]{16,}|x-api-key: [A-Za-z0-9]' \
+               -- . ':!CHANGELOG.md' ':!.github/workflows/ci.yml'; then
             echo "::error::found a site-specific default or a credential-looking string in tracked files"
             exit 1
           fi
