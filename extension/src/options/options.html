@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>RU Subtitles &amp; Study Guide — настройки</title>
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <main>
+    <h1>RU Subtitles &amp; Study Guide</h1>
+    <p class="subtitle">
+      Автоматический перевод английских субтитров на русский прямо в плеере — Kaltura,
+      YouTube и обычные HTML5-плееры — плюс учебный конспект лекции. Оригинальные тайминги сохраняются.
+    </p>
+
+    <section>
+      <h2>Перевод</h2>
+      <div id="notice" class="notice" hidden></div>
+
+      <label for="preset">Поставщик</label>
+      <select id="preset"></select>
+
+      <label for="endpoint">Endpoint (base URL OpenAI- или Anthropic-совместимого API)</label>
+      <input id="endpoint" type="text" placeholder="https://api.z.ai/api/anthropic" />
+
+      <label for="apiKey">API-ключ <span class="hint">(не нужен для локальных серверов)</span></label>
+      <div class="row">
+        <input id="apiKey" type="password" autocomplete="off" placeholder="" />
+        <button id="toggleKey" type="button" class="ghost">Показать</button>
+      </div>
+      <p class="hint" id="keyHint"></p>
+      <p class="hint">
+        <a id="keysLink" href="#" target="_blank" rel="noopener noreferrer">Где взять ключ →</a>
+        <span id="keysLinkNote" class="hint">Ключ хранится только в вашем браузере и отправляется лишь на указанный endpoint.</span>
+      </p>
+
+      <label for="model">Модель</label>
+      <div class="row">
+        <input id="model" type="text" list="modelList" placeholder="glm-5.3-flash" />
+        <button id="refreshModels" type="button" class="ghost">Список моделей</button>
+      </div>
+      <datalist id="modelList"></datalist>
+
+      <label for="targetLang">Целевой язык</label>
+      <input id="targetLang" type="text" value="Russian" />
+    </section>
+
+    <section>
+      <h2>Субтитры</h2>
+      <label>Режим по умолчанию</label>
+      <div class="row radios">
+        <label><input type="radio" name="defaultMode" value="ru" /> Русские</label>
+        <label><input type="radio" name="defaultMode" value="bi" /> Русский + English</label>
+      </div>
+
+      <label>Способ отображения</label>
+      <div class="row radios">
+        <label><input type="radio" name="display" value="texttrack" /> TextTrack (рекомендуется)</label>
+        <label><input type="radio" name="display" value="overlay" /> Overlay (если TextTrack не виден)</label>
+      </div>
+
+      <label for="fontSize">Размер шрифта субтитров: <span id="fontSizeValue" class="hint"></span></label>
+      <div class="row">
+        <input id="fontSize" type="range" min="12" max="40" step="1" style="flex:1" />
+      </div>
+
+      <label for="guideFontSize">Размер шрифта конспекта: <span id="guideFontSizeValue" class="hint"></span></label>
+      <div class="row">
+        <input id="guideFontSize" type="range" min="11" max="28" step="1" style="flex:1" />
+      </div>
+
+      <label class="check">
+        <input id="autoTranslate" type="checkbox" />
+        Автоматически переводить субтитры на любом сайте, где найден плеер (Kaltura, YouTube или обычный HTML5)
+      </label>
+    </section>
+
+    <section>
+      <h2>Параметры перевода</h2>
+      <div class="grid3">
+        <div>
+          <label for="batchSize">Фраз в батче</label>
+          <input id="batchSize" type="number" min="5" max="200" step="5" />
+        </div>
+        <div>
+          <label for="temperature">Temperature</label>
+          <input id="temperature" type="number" min="0" max="2" step="0.1" />
+        </div>
+        <div>
+          <label for="concurrency">Параллельных запросов</label>
+          <input id="concurrency" type="number" min="1" max="6" step="1" />
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Обслуживание</h2>
+      <div class="row">
+        <button id="save" type="button" class="primary">Сохранить</button>
+        <button id="test" type="button">Проверить подключение</button>
+        <button id="clearCache" type="button" class="ghost">Очистить кэш переводов</button>
+        <span id="cacheInfo" class="hint"></span>
+      </div>
+      <pre id="status" class="status"></pre>
+    </section>
+
+    <footer>
+      <p>
+        Субтитры (только английский текст) отправляются на указанный endpoint перевода.
+        Никакой другой телеметрии нет. Кэш хранится локально в браузере.
+      </p>
+    </footer>
+  </main>
+  <script src="options.js"></script>
+</body>
+</html>

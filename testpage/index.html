@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Local Kaltura-like fixture</title>
+  <style>
+    body { background: #111; color: #eee; font-family: Arial, sans-serif; margin: 0; padding: 24px; }
+    .player { position: relative; width: 720px; }
+    video { width: 100%; display: block; background: #000; }
+    p { max-width: 720px; }
+  </style>
+</head>
+<body>
+  <h3>Local fixture: simulated Kaltura caption playlist</h3>
+  <div class="player" id="player">
+    <video id="v" src="sample.mp4" controls loop playsinline></video>
+  </div>
+  <p>
+    This page imitates the Kaltura captions traffic shape: on load it requests
+    <code>captions/hls/entryId/0_9ab6xxqu/captions.srt.m3u8</code>, which references
+    <code>segmentIndex/*.vtt</code> WebVTT segments (with a repeated boundary cue, like the real player).
+  </p>
+  <script>
+    // Fire the same kind of request the Kaltura player would make.
+    fetch('captions/hls/entryId/0_9ab6xxqu/captions.srt.m3u8').catch(() => {});
+    // Ask for the segments a bit later as well (real players fetch on demand).
+    setTimeout(() => {
+      fetch('captions/hls/entryId/0_9ab6xxqu/segmentIndex/1.vtt').catch(() => {});
+    }, 500);
+  </script>
+</body>
+</html>

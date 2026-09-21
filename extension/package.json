@@ -1,0 +1,19 @@
+{
+  "name": "ru-subtitles-summarizer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Brave/Chromium MV3 extension: auto-translates Kaltura English captions to Russian",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "watch": "node scripts/build.mjs --watch",
+    "test": "node scripts/run-tests.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.287",
+    "@types/node": "^26.4.1",
+    "esbuild": "^0.24.2",
+    "typescript": "^5.7.2"
+  }
+}

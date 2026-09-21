@@ -1,0 +1,113 @@
+:root {
+  color-scheme: dark;
+  --bg: #14161a;
+  --panel: #1c1f25;
+  --border: #33373f;
+  --text: #e8eaed;
+  --muted: #9aa0a6;
+  --accent: #8ab4f8;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.5 "Segoe UI", Arial, sans-serif;
+}
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+}
+
+h1 { font-size: 20px; margin: 0 0 4px; }
+h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .8px; color: var(--accent); margin: 0 0 12px; }
+
+.subtitle { color: var(--muted); margin: 0 0 20px; }
+
+section {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+label {
+  display: block;
+  margin: 12px 0 4px;
+  font-weight: 600;
+}
+label:first-child { margin-top: 0; }
+label.check { display: flex; align-items: center; gap: 8px; font-weight: 400; margin-top: 12px; }
+
+input[type=text], input[type=password], input[type=number], select {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: #12141a;
+  color: var(--text);
+  font: inherit;
+}
+input:focus, select:focus { outline: 1px solid var(--accent); }
+
+.row { display: flex; gap: 8px; align-items: center; }
+.row input { flex: 1; }
+.radios { gap: 18px; margin-top: 4px; }
+.radios label { display: flex; align-items: center; gap: 6px; font-weight: 400; margin: 0; }
+
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+button {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: #262a32;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+button:hover { background: #303641; }
+button.primary { background: #1a4f8a; border-color: #2f6cb3; }
+button.primary:hover { background: #1f5fa5; }
+button.ghost { background: transparent; }
+
+.hint { color: var(--muted); font-weight: 400; font-size: 12px; }
+.hint a { color: var(--accent); }
+
+/* First-run / configuration warning: the one thing a new user must fix. */
+.notice {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #6b5518;
+  background: #2a2413;
+  color: #f5d67b;
+  font-size: 13px;
+}
+.notice[hidden] { display: none; }
+
+.status {
+  margin: 12px 0 0;
+  padding: 10px;
+  border-radius: 6px;
+  background: #101216;
+  border: 1px solid var(--border);
+  min-height: 18px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font: 12px/1.5 Consolas, monospace;
+  color: var(--muted);
+}
+.status.ok { color: #81c995; border-color: #2d5a3d; }
+.status.err { color: #f28b82; border-color: #5a2d2d; }
+.status.warn { color: #f5d67b; border-color: #6b5518; }
+
+code { background: #101216; border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-size: 12px; }
+
+footer { color: var(--muted); font-size: 12px; }

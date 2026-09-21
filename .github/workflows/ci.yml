@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: extension
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: extension/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm test
+
+      - name: Build extension
+        run: npm run build
+
+      - name: Verify the built manifest
+        run: |
+          node -e '
+            const m = require("./dist/manifest.json");
+            const ok = m.manifest_version === 3 && m.host_permissions.includes("<all_urls>");
+            if (!ok) { console.error("unexpected built manifest", m); process.exit(1); }
+            console.log("manifest", m.version, "ok");
+          '
+
+      - name: Upload the built extension
+        uses: actions/upload-artifact@v4
+        with:
+          name: ru-subtitles-dist
+          path: extension/dist

@@ -1,0 +1,42 @@
+# --- Dependencies ---
+node_modules/
+extension/node_modules/
+.npm/
+
+# --- Build output (regenerate with `cd extension && npm install && npm run build`) ---
+extension/dist/
+extension/build/
+*.tsbuildinfo
+
+# --- Local diagnostics / scratch files ---
+tools/ui-log.txt
+*.diag.txt
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# --- Secrets & local config (never commit real keys) ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.json
+extension/src/**/secrets.ts
+
+# --- Editors & OS ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+*.lnk
+
+# --- Archives / temp ---
+*.zip
+*.7z
+*.rar
+*.tmp
+*.bak
