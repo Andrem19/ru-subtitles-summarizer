@@ -1,7 +1,6 @@
 # RU Subtitles & Study Guide
 
 [![Release](https://img.shields.io/github/v/release/Andrem19/ru-subtitles-summarizer?label=release)](https://github.com/Andrem19/ru-subtitles-summarizer/releases/latest)
-[![CI](https://github.com/Andrem19/ru-subtitles-summarizer/actions/workflows/ci.yml/badge.svg)](https://github.com/Andrem19/ru-subtitles-summarizer/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Расширение для **Chromium-браузеров** (Chrome, Edge, Brave, Opera, Vivaldi, Arc), которое автоматически переводит английские субтитры видео на **русский язык** прямо в плеере, а по кнопке **📚** собирает учебный конспект лекции. Работает с плеерами **Kaltura**, встроенными **видео YouTube** и обычными **HTML5-плеерами** — на любом сайте, а не только на одном университетском портале.
@@ -215,12 +214,12 @@ extension/
       studyPanel.ts      панель конспекта (копирование, перегенерация, размер шрифта)
       ui.ts              чип RU / кнопка 📚 / меню / тосты
     options/             страница настроек (выбор провайдера, ключ, тест подключения)
-  tests/                 67 тестов: hls, vtt, timedtext, batching, translate, hash, assoc,
+  tests/                 68 тестов: hls, vtt, timedtext, batching, translate, hash, assoc,
                          pipeline (HTTP), engine, studyguide, markdown, settings
   dist/                  собранное расширение (load unpacked)
 ```
 
-Собирается esbuild'ом: `npm run build` (watch: `npm run watch`). Тесты: `npm test` (`node --test`, 67/67 ✓). Типы: `npm run typecheck`.
+Собирается esbuild'ом: `npm run build` (watch: `npm run watch`). Тесты: `npm test` (`node --test`, 68/68 ✓). Типы: `npm run typecheck`. Всё вместе — `npm run gate` (см. «Проверка перед публикацией»).
 
 ### Диагностика без DevTools
 
@@ -233,6 +232,38 @@ node tools/read-diag.mjs \
 ```
 
 ID расширения виден на странице `brave://extensions` (у распакованной сборки он зависит от пути к папке).
+
+## Проверка перед публикацией (локально)
+
+GitHub Actions **не участвует** в проверке этого проекта. Hosted-запусков нет,
+статус-чека, которого нужно дождаться, тоже нет, и платный billing для проверки
+не нужен. Проверка — это локальные команды ниже, выполненные на машине
+разработчика на том же коммите, который идёт в PR. Результат (команда, ОС, версия
+Node, SHA коммита) указывайте в самом PR: незапущенную проверку нельзя выдавать за
+пройденную.
+
+```bash
+cd extension
+npm ci          # ровно то, что записано в package-lock.json
+npm run gate    # typecheck → тесты → сборка → проверка исходников, dist/ и манифеста
+```
+
+`npm run gate` — вся последовательность одной командой. Отдельные шаги:
+
+| Команда | Что проверяет |
+|---|---|
+| `npm run typecheck` | `tsc --noEmit`, без ошибок |
+| `npm test` | 68 тестов (`node --test`), офлайн, без браузера |
+| `npm run build` | сборка `dist/` |
+| `npm run verify` | в отслеживаемых файлах нет ключей и доменов конкретного вуза; в собранном `dist/` их тоже нет; `dist/manifest.json` — MV3 с `<all_urls>` |
+
+`npm run verify` проверяет **и исходники, и собранный бандл** — устаревший `dist/`,
+собранный до правки, это отдельная ошибка, а не тихий пропуск. Скрипт запускается
+локально, без сети и без сторонних зависимостей.
+
+Чего эти команды **не** делают: они не открывают браузер. Живая проверка (чип,
+субтитры, конспект) остаётся ручной — см. `testpage/` ниже и список в
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Development/test page
 

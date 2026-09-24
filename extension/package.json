@@ -8,7 +8,9 @@
     "build": "node scripts/build.mjs",
     "watch": "node scripts/build.mjs --watch",
     "test": "node scripts/run-tests.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "verify": "node scripts/verify-sources.mjs",
+    "gate": "npm run typecheck && npm test && npm run build && npm run verify"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.287",
