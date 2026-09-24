@@ -1,4 +1,4 @@
-# Normalise line endings so Windows checkouts and Linux CI produce identical diffs
+# Normalise line endings so Windows and Linux checkouts produce identical diffs
 * text=auto eol=lf
 
 # Binary assets
