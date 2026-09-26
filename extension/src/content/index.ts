@@ -4,6 +4,7 @@
 import { chooseVideoIndex, type VideoCandidate } from './assoc';
 import { SubtitleOverlay } from './overlay';
 import { StudyPanel } from './studyPanel';
+import { buildGuideExport } from '../shared/studyexport';
 import {
   ensureTrack,
   makeCue,
@@ -553,6 +554,20 @@ function attachVisuals(st: CaptionState, container: HTMLElement): void {
         st.panel?.setGenerating();
         st.guideBtn?.setBusy(true);
         void requestGuide(st, true);
+      },
+      onExport: async () => {
+        // The cues as they were heard (originals, in order) are the transcript
+        // the guide was built from — the Hub's provenance hash is of these.
+        const cues = st.cues.map((c) => ({ start: c.start, text: c.original }));
+        return buildGuideExport({
+          markdown: st.panel?.getMarkdown() ?? '',
+          cues,
+          videoUrl: location.href,
+          title: document.title || 'Видео',
+          language: st.settings.targetLang,
+          model: st.settings.model,
+          generatorVersion: `ext-${chrome.runtime.getManifest().version}`,
+        });
       },
     });
     st.panel.setFontSize(st.settings.guideFontSize);

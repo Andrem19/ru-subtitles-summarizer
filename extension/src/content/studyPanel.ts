@@ -49,10 +49,26 @@ export class StudyPanel {
   private copyFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
   private fontSize = 16;
 
-  constructor(private host: HTMLElement, private callbacks: { onClose: () => void; onRegenerate: () => void }) {}
+  private exportBtn: HTMLButtonElement | null = null;
+  private exportFeedbackTimer: ReturnType<typeof setTimeout> | undefined;
+
+  constructor(
+    private host: HTMLElement,
+    private callbacks: {
+      onClose: () => void;
+      onRegenerate: () => void;
+      /** Builds the Hub ingestion file (ENG-204); called when the user exports. */
+      onExport: () => Promise<{ json: string; filename: string }>;
+    },
+  ) {}
 
   isOpen(): boolean {
     return this.root !== null;
+  }
+
+  /** The guide as the generator wrote it; empty until a guide is ready. */
+  getMarkdown(): string {
+    return this.markdown;
   }
 
   /** Applies the reader font size; works before and after open(). */
@@ -88,13 +104,20 @@ export class StudyPanel {
       e.stopPropagation();
       void this.copyToClipboard(copy);
     });
+    const exportBtn = doc.createElement('button');
+    exportBtn.textContent = '↗ Экспорт';
+    exportBtn.title = 'Сохранить конспект JSON-файлом для импорта в Hub';
+    exportBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      void this.exportToFile(exportBtn);
+    });
     const close = doc.createElement('button');
     close.textContent = '× Закрыть';
     close.addEventListener('click', (e) => {
       e.stopPropagation();
       this.callbacks.onClose();
     });
-    head.append(title, copy, regen, close);
+    head.append(title, copy, exportBtn, regen, close);
 
     const body = doc.createElement('div');
     body.className = 'rusub-study-body';
@@ -117,8 +140,38 @@ export class StudyPanel {
     this.error = error;
     this.regenBtn = regen;
     this.copyBtn = copy;
+    this.exportBtn = exportBtn;
     regen.disabled = true;
     copy.disabled = true;
+    exportBtn.disabled = true;
+  }
+
+  /** Downloads the guide as the Hub ingestion JSON (ENG-204). */
+  private async exportToFile(btn: HTMLButtonElement): Promise<void> {
+    if (!this.markdown) return;
+    if (this.exportFeedbackTimer) clearTimeout(this.exportFeedbackTimer);
+    try {
+      const exportData = await this.callbacks.onExport();
+      const doc = this.host.ownerDocument;
+      const blob = new Blob([exportData.json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = doc.createElement('a');
+      a.href = url;
+      a.download = exportData.filename;
+      doc.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      btn.textContent = '✓ Сохранено';
+      btn.classList.add('copied');
+    } catch {
+      btn.textContent = '✗ Не удалось';
+      btn.classList.remove('copied');
+    }
+    this.exportFeedbackTimer = setTimeout(() => {
+      btn.textContent = '↗ Экспорт';
+      btn.classList.remove('copied');
+    }, 1800);
   }
 
   /** Copies the current guide markdown; shows success/failure on the button. */
