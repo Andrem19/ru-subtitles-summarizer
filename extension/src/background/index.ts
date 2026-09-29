@@ -1,6 +1,7 @@
 // MV3 service worker: detection -> pipeline -> engine -> content script messaging.
 
-import type { CuesMessage, ContentMessage, GuideRequestMessage, YoutubeCuesRequestMessage } from '../shared/types';
+import type { CuesMessage, ContentMessage, GuideExportedMessage, GuideRequestMessage, YoutubeCuesRequestMessage } from '../shared/types';
+import { drainSyncQueue, enqueueGuideUpload, RETRY_ALARM, syncTick } from './hubSyncStore';
 import { hostMatches, loadSettings, type Settings } from '../shared/settings';
 import { diag } from '../shared/diag';
 import { initDetection, type DetectedPlaylist } from './detection';
@@ -219,6 +220,22 @@ async function handleYoutubeRequest(msg: YoutubeCuesRequestMessage, tabId: numbe
 
 chrome.runtime.onMessage.addListener((msg: ContentMessage, sender, sendResponse) => {
   if (typeof msg !== 'object' || msg === null || !('type' in msg)) return;
+  // Hub sync (ENG-204): the export notification carries no tab context — the
+  // queue is global, not per-player — so it is handled before the tab guard.
+  if ((msg as { type: string }).type === 'rusub:guideExported') {
+    const exported = msg as GuideExportedMessage;
+    void (async () => {
+      const settings = await loadSettings(chrome.storage.local);
+      await enqueueGuideUpload(settings, {
+        entityId: exported.entityId,
+        transcriptHash: exported.transcriptHash,
+        payload: exported.payload,
+      });
+      await syncTick(settings, (...args) => fetch(...args));
+    })();
+    sendResponse({ ok: true });
+    return true;
+  }
   const tabId = sender.tab?.id;
   const frameId = sender.frameId ?? 0;
   if (typeof tabId !== 'number') return;
@@ -281,4 +298,15 @@ chrome.action.onClicked.addListener(() => {
 void getSettings().then((s) => {
   configureLlmQueue(s.concurrency);
   log('[rusub] service worker started; endpoint:', s.endpoint, 'model:', s.model || '(default)');
+});
+
+// Backoff retries for the optional Hub sync (ENG-204): only fires when the
+// owner enabled sync; drainSyncQueue itself is a no-op otherwise.
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === RETRY_ALARM) {
+    void (async () => {
+      const settings = await loadSettings(chrome.storage.local);
+      await drainSyncQueue(settings, (...args) => fetch(...args));
+    })();
+  }
 });

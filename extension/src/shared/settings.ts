@@ -54,6 +54,12 @@ export interface Settings {
   guideFontSize: number;
   /** concurrency for translation requests */
   concurrency: number;
+  /** Optional direct-to-Hub sync of saved guides (ENG-204). Off by default. */
+  hubSyncEnabled: boolean;
+  /** Hub base URL for the direct sync; empty unless the owner enables sync. */
+  hubSyncEndpoint: string;
+  /** Bearer token for the Hub; lives only in chrome.storage.local. */
+  hubSyncToken: string;
 }
 
 export const PRESETS: Record<PresetId, ProviderPreset> = {
@@ -150,6 +156,9 @@ export const DEFAULT_SETTINGS: Settings = {
   fontSize: 24,
   guideFontSize: 16,
   concurrency: 2,
+  hubSyncEnabled: false,
+  hubSyncEndpoint: '',
+  hubSyncToken: '',
 };
 
 const SETTINGS_KEY = 'settings';
@@ -233,6 +242,11 @@ export function mergeSettings(raw: unknown): Settings {
   if (r.display === 'texttrack' || r.display === 'overlay') s.display = r.display;
   s.fontSize = clampInt(r.fontSize, 12, 40, DEFAULT_SETTINGS.fontSize);
   s.guideFontSize = clampInt(r.guideFontSize, 11, 28, DEFAULT_SETTINGS.guideFontSize);
+  // Hub sync (ENG-204): strictly opt-in; an empty endpoint never syncs even if
+  // the flag was flipped, so a default build holds no Hub address at all.
+  if (typeof r.hubSyncEnabled === 'boolean') s.hubSyncEnabled = r.hubSyncEnabled;
+  if (typeof r.hubSyncEndpoint === 'string') s.hubSyncEndpoint = r.hubSyncEndpoint.trim().replace(/\/+$/, '');
+  if (typeof r.hubSyncToken === 'string') s.hubSyncToken = r.hubSyncToken;
   return s;
 }
 

@@ -94,6 +94,24 @@
     </section>
 
     <section>
+      <h2>Синхронизация конспектов с Hub (необязательно)</h2>
+      <p class="hint">
+        По умолчанию конспект сохраняется JSON-файлом — этого достаточно, Hub не нужен.
+        Если включить синхронизацию, сохранённый конспект будет отправлен на ваш Hub
+        (нужен адрес и токен доступа). Ключ хранится только локально в браузере;
+        при выключенной синхронизации никаких обращений к Hub нет.
+      </p>
+      <label class="check">
+        <input id="hubSyncEnabled" type="checkbox" />
+        Отправлять сохранённые конспекты на Hub автоматически
+      </label>
+      <div class="row">
+        <input id="hubSyncEndpoint" type="url" placeholder="https://hub.example" style="flex:2" />
+        <input id="hubSyncToken" type="password" placeholder="токен Hub (необязательно)" style="flex:1" />
+      </div>
+    </section>
+
+    <section>
       <h2>Обслуживание</h2>
       <div class="row">
         <button id="save" type="button" class="primary">Сохранить</button>

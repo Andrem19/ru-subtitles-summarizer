@@ -13,6 +13,8 @@ import {
   type Settings,
 } from '../shared/settings';
 import { cacheClear, cacheCount } from '../background/cache';
+import { emptyHubSyncState, resume } from '../shared/hubSync';
+import { loadSyncState, saveSyncState } from '../background/hubSyncStore';
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 
@@ -42,6 +44,9 @@ const el = {
   clearCache: $<HTMLButtonElement>('clearCache'),
   cacheInfo: $<HTMLElement>('cacheInfo'),
   status: $<HTMLPreElement>('status'),
+  hubSyncEnabled: $<HTMLInputElement>('hubSyncEnabled'),
+  hubSyncEndpoint: $<HTMLInputElement>('hubSyncEndpoint'),
+  hubSyncToken: $<HTMLInputElement>('hubSyncToken'),
 };
 
 function readForm(): Settings {
@@ -64,6 +69,9 @@ function readForm(): Settings {
     display: display === 'overlay' ? 'overlay' : 'texttrack',
     fontSize: Number(el.fontSize.value) || DEFAULT_SETTINGS.fontSize,
     guideFontSize: Number(el.guideFontSize.value) || DEFAULT_SETTINGS.guideFontSize,
+    hubSyncEnabled: el.hubSyncEnabled.checked,
+    hubSyncEndpoint: el.hubSyncEndpoint.value.trim(),
+    hubSyncToken: el.hubSyncToken.value,
   };
 }
 
@@ -83,6 +91,9 @@ function writeForm(s: Settings): void {
   el.fontSizeValue.textContent = `${s.fontSize} px`;
   el.guideFontSize.value = String(s.guideFontSize);
   el.guideFontSizeValue.textContent = `${s.guideFontSize} px`;
+  el.hubSyncEnabled.checked = s.hubSyncEnabled;
+  el.hubSyncEndpoint.value = s.hubSyncEndpoint;
+  el.hubSyncToken.value = s.hubSyncToken;
 }
 
 function setStatus(text: string, kind: '' | 'ok' | 'err' | 'warn' = ''): void {
@@ -240,6 +251,11 @@ async function init(): Promise<void> {
       return;
     }
     await saveSettings(chrome.storage.local, s);
+    // Saving an enabled, configured sync clears the unauthorized pause: the
+    // owner just re-entered the credential, the latch must not outlive it.
+    if (s.hubSyncEnabled && s.hubSyncEndpoint !== '') {
+      await saveSyncState(resume(await loadSyncState()));
+    }
     const problem = missingKeyMessage(s);
     showNotice(problem);
     if (problem) {
