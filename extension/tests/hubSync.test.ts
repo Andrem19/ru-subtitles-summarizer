@@ -3,6 +3,8 @@ import { test } from 'node:test';
 import {
   HUB_SYNC_MAX_QUEUE,
   dueUploads,
+  nextRetryDelayMs,
+  resume,
   emptyHubSyncState,
   enqueueUpload,
   pushGuideToHub,
@@ -104,4 +106,27 @@ test('pushGuideToHub: a network failure is unreachable, not a crash', async () =
   }) as unknown as typeof fetch;
   const result = await pushGuideToHub({ enabled: true, endpoint: 'https://hub.example', token: '' }, UPLOAD, fetchImpl);
   assert.equal(result.status, 'unreachable');
+});
+
+test('nextRetryDelayMs: the retry chain never dies while undelivered uploads remain', () => {
+  let state: HubSyncState = emptyHubSyncState();
+  assert.equal(nextRetryDelayMs(state, NOW), null); // empty queue: nothing to wake for
+  state = enqueueUpload(state, { ...UPLOAD, now: NOW }).state;
+  assert.equal(nextRetryDelayMs(state, NOW), 0); // due now
+  state = recordFailure(state, UPLOAD.entityId, 'HTTP 503', NOW);
+  assert.equal(nextRetryDelayMs(state, NOW + 10_000), 20_000); // backoff gap: schedule the wake-up
+  // The tick BETWEEN backoffs (nothing due, nothing failed) still schedules.
+  assert.equal(nextRetryDelayMs(state, NOW + 29_999), 1);
+  assert.equal(nextRetryDelayMs(state, NOW + 60_000), 0); // matured
+  const capped = nextRetryDelayMs(state, NOW - 10 ** 12, 5000);
+  assert.equal(capped, 5000); // never beyond the alarm cap
+});
+
+test('nextRetryDelayMs + resume: the 401 pause is a latch, not a brick', () => {
+  let state: HubSyncState = emptyHubSyncState();
+  state = enqueueUpload(state, { ...UPLOAD, now: NOW }).state;
+  state = { ...state, paused: true }; // unauthorized pause
+  assert.equal(nextRetryDelayMs(state, NOW), null); // paused: no wake-ups
+  state = resume(state); // owner saved a working credential
+  assert.equal(nextRetryDelayMs(state, NOW), 0); // the queue lives again
 });

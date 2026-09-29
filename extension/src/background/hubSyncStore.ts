@@ -10,16 +10,18 @@ import {
   dueUploads,
   emptyHubSyncState,
   enqueueUpload,
+  nextRetryDelayMs,
   pushGuideToHub,
   recordConflict,
   recordFailure,
   recordSuccess,
+  resume,
   type HubSyncState,
 } from '../shared/hubSync';
 import { type UiSettings } from '../shared/settings';
 
 const SYNC_STATE_KEY = 'hubSyncState';
-const RETRY_ALARM = 'hub-sync-retry';
+export const RETRY_ALARM = 'hub-sync-retry';
 
 type SyncStorageArea = { get: (keys?: string | string[] | null) => Promise<Record<string, unknown>>; set: (items: Record<string, unknown>) => Promise<void> };
 
@@ -47,10 +49,25 @@ export async function saveSyncState(state: HubSyncState): Promise<void> {
 /** Called after a successful export. Sync disabled → not queued, no fetch. */
 export async function enqueueGuideUpload(settings: UiSettings, upload: { entityId: string; transcriptHash: string; payload: string }, now = Date.now()): Promise<void> {
   if (!settings.hubSyncEnabled || settings.hubSyncEndpoint === '') return;
-  const state = await loadSyncState();
+  const loaded = await loadSyncState();
+  // A newly configured/enabled sync clears the unauthorized pause: the owner
+  // just (re)entered credentials, so waiting on the latch would be wrong.
+  const state = settings.hubSyncEndpoint !== '' ? resume(loaded) : loaded;
   const result = enqueueUpload(state, { ...upload, now });
-  await saveSyncState(result.state);
-  void chrome.alarms.create(RETRY_ALARM, { delayInMinutes: 0.1 }); // first attempt right away
+  await saveSyncResult(result.state);
+  await armRetryAlarm(result.state, Date.now());
+}
+
+function saveSyncResult(state: HubSyncState): Promise<void> {
+  return saveSyncState(state);
+}
+
+/** Re-arm the retry alarm from the pure scheduler; no queue → no alarm. */
+async function armRetryAlarm(state: HubSyncState, now: number): Promise<void> {
+  const delayMs = nextRetryDelayMs(state, now);
+  if (delayMs === null) return;
+  // Chrome clamps alarms to whole half-minute steps on most platforms.
+  void chrome.alarms.create(RETRY_ALARM, { delayInMinutes: Math.max(0.5, delayMs / 60_000) });
 }
 
 /**
@@ -90,10 +107,11 @@ export async function drainSyncQueue(settings: UiSettings, fetchImpl: typeof fet
   return { uploaded, failed, conflicts, paused: current.paused };
 }
 
-/** Alarm/message entry point: one drain attempt against the configured Hub. */
+/** Alarm/message entry point: one drain attempt, then schedule the next one. */
 export async function syncTick(settings: UiSettings, fetchImpl: typeof fetch): Promise<void> {
-  const result = await drainSyncQueue(settings, fetchImpl);
-  if (!result.paused && result.failed > 0) {
-    void chrome.alarms.create(RETRY_ALARM, { delayInMinutes: 1 });
-  }
+  await drainSyncQueue(settings, fetchImpl);
+  // Re-arm from the POST-drain state: undelivered uploads keep the chain
+  // alive even when THIS tick sent nothing and failed at nothing.
+  const state = await loadSyncState();
+  await armRetryAlarm(state, Date.now());
 }

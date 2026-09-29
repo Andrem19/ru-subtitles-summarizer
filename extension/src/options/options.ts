@@ -13,6 +13,8 @@ import {
   type Settings,
 } from '../shared/settings';
 import { cacheClear, cacheCount } from '../background/cache';
+import { emptyHubSyncState, resume } from '../shared/hubSync';
+import { loadSyncState, saveSyncState } from '../background/hubSyncStore';
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 

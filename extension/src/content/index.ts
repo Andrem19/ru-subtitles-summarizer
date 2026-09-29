@@ -573,7 +573,7 @@ function attachVisuals(st: CaptionState, container: HTMLElement): void {
         void chrome.runtime.sendMessage({
           type: 'rusub:guideExported',
           entityId: exportData.entityId,
-          transcriptHash: JSON.parse(exportData.json).transcriptHash as string,
+          transcriptHash: exportData.transcriptHash,
           payload: exportData.json,
         }).catch(() => {});
         return exportData;

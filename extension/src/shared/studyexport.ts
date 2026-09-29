@@ -37,7 +37,7 @@ export async function guideIdentity(transcriptHash: string, generatorVersion: st
 export const GUIDE_EXPORT_SCHEMA_VERSION = 1;
 
 /** Builds the JSON file the user saves and imports in the PWA. */
-export async function buildGuideExport(input: GuideExportInput): Promise<{ json: string; entityId: string; filename: string }> {
+export async function buildGuideExport(input: GuideExportInput): Promise<{ json: string; entityId: string; filename: string; transcriptHash: string }> {
   const transcript = transcriptToLines(input.cues);
   const transcriptHash = await sha256HexFor(transcript);
   const document = {
@@ -63,6 +63,7 @@ export async function buildGuideExport(input: GuideExportInput): Promise<{ json:
     json,
     entityId: await guideIdentity(transcriptHash, input.generatorVersion),
     filename: `study-guide-${transcriptHash.slice(0, 12)}.json`,
+    transcriptHash,
   };
 }
 

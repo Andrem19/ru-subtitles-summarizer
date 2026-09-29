@@ -81,6 +81,23 @@ export function enqueueUpload(
   return { state: { ...state, queue }, dropped, duplicate: false };
 }
 
+/**
+ * Milliseconds until the next attempt is worth waking the worker for, or null
+ * when nothing will ever become due: an empty queue or a paused one. The
+ * ONLY decision point for re-arming the retry alarm — a tick that processed
+ * nothing must still schedule the next one while undelivered uploads remain.
+ */
+export function nextRetryDelayMs(state: HubSyncState, now: number, capMs = BACKOFF_CAP_MS): number | null {
+  if (state.paused || state.queue.length === 0) return null;
+  const soonest = Math.min(...state.queue.map((q) => q.nextAttemptAt));
+  return Math.min(Math.max(soonest - now, 0), capMs);
+}
+
+/** Clear the unauthorized-pause latch (the owner fixed the credential). */
+export function resume(state: HubSyncState): HubSyncState {
+  return state.paused ? { ...state, paused: false } : state;
+}
+
 /** The uploads that may go out now, oldest first, in one bounded batch. */
 export function dueUploads(state: HubSyncState, now: number, batch = 5): QueuedGuideUpload[] {
   if (state.paused) return [];

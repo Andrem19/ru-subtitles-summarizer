@@ -1,7 +1,7 @@
 // MV3 service worker: detection -> pipeline -> engine -> content script messaging.
 
 import type { CuesMessage, ContentMessage, GuideExportedMessage, GuideRequestMessage, YoutubeCuesRequestMessage } from '../shared/types';
-import { drainSyncQueue, enqueueGuideUpload, syncTick } from './hubSyncStore';
+import { drainSyncQueue, enqueueGuideUpload, RETRY_ALARM, syncTick } from './hubSyncStore';
 import { hostMatches, loadSettings, type Settings } from '../shared/settings';
 import { diag } from '../shared/diag';
 import { initDetection, type DetectedPlaylist } from './detection';
@@ -303,7 +303,7 @@ void getSettings().then((s) => {
 // Backoff retries for the optional Hub sync (ENG-204): only fires when the
 // owner enabled sync; drainSyncQueue itself is a no-op otherwise.
 chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === 'hub-sync-retry') {
+  if (alarm.name === RETRY_ALARM) {
     void (async () => {
       const settings = await loadSettings(chrome.storage.local);
       await drainSyncQueue(settings, (...args) => fetch(...args));
