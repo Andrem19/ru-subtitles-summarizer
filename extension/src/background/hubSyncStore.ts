@@ -50,9 +50,9 @@ export async function saveSyncState(state: HubSyncState): Promise<void> {
 export async function enqueueGuideUpload(settings: UiSettings, upload: { entityId: string; transcriptHash: string; payload: string }, now = Date.now()): Promise<void> {
   if (!settings.hubSyncEnabled || settings.hubSyncEndpoint === '') return;
   const loaded = await loadSyncState();
-  // A newly configured/enabled sync clears the unauthorized pause: the owner
-  // just (re)entered credentials, so waiting on the latch would be wrong.
-  const state = settings.hubSyncEndpoint !== '' ? resume(loaded) : loaded;
+  // A new export on a configured sync clears the unauthorized pause: the
+  // owner is actively using sync, the latch must not outlive that.
+  const state = resume(loaded);
   const result = enqueueUpload(state, { ...upload, now });
   await saveSyncResult(result.state);
   await armRetryAlarm(result.state, Date.now());

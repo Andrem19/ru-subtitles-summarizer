@@ -251,6 +251,11 @@ async function init(): Promise<void> {
       return;
     }
     await saveSettings(chrome.storage.local, s);
+    // Saving an enabled, configured sync clears the unauthorized pause: the
+    // owner just re-entered the credential, the latch must not outlive it.
+    if (s.hubSyncEnabled && s.hubSyncEndpoint !== '') {
+      await saveSyncState(resume(await loadSyncState()));
+    }
     const problem = missingKeyMessage(s);
     showNotice(problem);
     if (problem) {
