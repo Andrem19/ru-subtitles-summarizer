@@ -42,6 +42,9 @@ const el = {
   clearCache: $<HTMLButtonElement>('clearCache'),
   cacheInfo: $<HTMLElement>('cacheInfo'),
   status: $<HTMLPreElement>('status'),
+  hubSyncEnabled: $<HTMLInputElement>('hubSyncEnabled'),
+  hubSyncEndpoint: $<HTMLInputElement>('hubSyncEndpoint'),
+  hubSyncToken: $<HTMLInputElement>('hubSyncToken'),
 };
 
 function readForm(): Settings {
@@ -64,6 +67,9 @@ function readForm(): Settings {
     display: display === 'overlay' ? 'overlay' : 'texttrack',
     fontSize: Number(el.fontSize.value) || DEFAULT_SETTINGS.fontSize,
     guideFontSize: Number(el.guideFontSize.value) || DEFAULT_SETTINGS.guideFontSize,
+    hubSyncEnabled: el.hubSyncEnabled.checked,
+    hubSyncEndpoint: el.hubSyncEndpoint.value.trim(),
+    hubSyncToken: el.hubSyncToken.value,
   };
 }
 
@@ -83,6 +89,9 @@ function writeForm(s: Settings): void {
   el.fontSizeValue.textContent = `${s.fontSize} px`;
   el.guideFontSize.value = String(s.guideFontSize);
   el.guideFontSizeValue.textContent = `${s.guideFontSize} px`;
+  el.hubSyncEnabled.checked = s.hubSyncEnabled;
+  el.hubSyncEndpoint.value = s.hubSyncEndpoint;
+  el.hubSyncToken.value = s.hubSyncToken;
 }
 
 function setStatus(text: string, kind: '' | 'ok' | 'err' | 'warn' = ''): void {

@@ -96,11 +96,20 @@ export interface YoutubeEnableCcMessage {
   videoId: string;
 }
 
+/** content -> background: an export file was saved; enqueue for sync if enabled */
+export interface GuideExportedMessage {
+  type: 'rusub:guideExported';
+  entityId: string;
+  transcriptHash: string;
+  payload: string;
+}
+
 export type ContentMessage =
   | EnsureTranslationMessage
   | GuideRequestMessage
   | TimeUpdateMessage
   | YoutubeCuesRequestMessage
+  | GuideExportedMessage
   | { type: 'rusub:cancel'; requestId: string }
   | { type: 'rusub:openOptions' };
 

@@ -559,7 +559,7 @@ function attachVisuals(st: CaptionState, container: HTMLElement): void {
         // The cues as they were heard (originals, in order) are the transcript
         // the guide was built from — the Hub's provenance hash is of these.
         const cues = st.cues.map((c) => ({ start: c.start, text: c.original }));
-        return buildGuideExport({
+        const exportData = await buildGuideExport({
           markdown: st.panel?.getMarkdown() ?? '',
           cues,
           videoUrl: location.href,
@@ -568,6 +568,15 @@ function attachVisuals(st: CaptionState, container: HTMLElement): void {
           model: st.settings.model,
           generatorVersion: `ext-${chrome.runtime.getManifest().version}`,
         });
+        // Optional direct sync (ENG-204): the background ignores this unless
+        // the owner enabled it; the file download below stays the default path.
+        void chrome.runtime.sendMessage({
+          type: 'rusub:guideExported',
+          entityId: exportData.entityId,
+          transcriptHash: JSON.parse(exportData.json).transcriptHash as string,
+          payload: exportData.json,
+        }).catch(() => {});
+        return exportData;
       },
     });
     st.panel.setFontSize(st.settings.guideFontSize);

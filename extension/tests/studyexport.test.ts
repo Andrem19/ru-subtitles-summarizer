@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { buildGuideExport, guideIdentity } from '../src/shared/studyexport';
+import { buildGuideExport, expectedEntityId, guideIdentity, validateGuideExport } from '../src/shared/studyexport';
 import { type TranscriptLine } from '../src/shared/studyguide';
 
 const cue = (start: number, text: string): TranscriptLine => ({ start, text });
@@ -44,4 +44,61 @@ test('guideIdentity: two transcripts never share an id, the same one always does
   const b = await guideIdentity('hash-b', 'ext-1.4.0');
   assert.equal(a, a2);
   assert.notEqual(a, b);
+});
+
+test('the export file carries schemaVersion 1 and survives its own validator', async () => {
+  const cues = [cue(0, 'Hello.'), cue(30, 'World.')];
+  const input = {
+    markdown: '# Guide\n\n## Summary\n\nText.\n\n## Details\n\nMore.\n\n## Third\n\nEven more.',
+    cues,
+    videoUrl: 'https://example.org/lecture-2',
+    title: 'Lecture 2',
+    language: 'en',
+    generatorVersion: 'ext-1.4.0',
+  };
+  const built = await buildGuideExport(input);
+  const verdict = await validateGuideExport(built.json);
+  assert.equal(verdict.ok, true);
+  if (verdict.ok) {
+    assert.equal(verdict.value.schemaVersion, 1);
+    assert.equal(await expectedEntityId(verdict.value), built.entityId); // identity re-derives from the file
+  }
+});
+
+test('the validator rejects edited, foreign and truncated files with reasons', async () => {
+  const built = await buildGuideExport({
+    markdown: '# Guide\n\n## Summary\n\nText.\n\n## Details\n\nMore.\n\n## Third\n\nEven more.',
+    cues: [cue(0, 'Hello.')],
+    videoUrl: 'https://example.org/lecture-3',
+    title: 'Lecture 3',
+    language: 'en',
+    generatorVersion: 'ext-1.4.0',
+  });
+  // Cosmetic edits stay valid and keep the identity: the id derives from the
+  // transcript hash + generator, not from the editable display fields.
+  const edited = JSON.parse(built.json);
+  edited.document.title = 'Renamed';
+  const editedVerdict = await validateGuideExport(JSON.stringify(edited));
+  assert.equal(editedVerdict.ok, true);
+  if (editedVerdict.ok) {
+    assert.equal(await expectedEntityId(editedVerdict.value), built.entityId);
+  }
+  // A changed transcriptHash is a different transcript: different identity.
+  const rehashed = JSON.parse(built.json);
+  rehashed.transcriptHash = 'b'.repeat(64);
+  const rehashedVerdict = await validateGuideExport(JSON.stringify(rehashed));
+  assert.equal(rehashedVerdict.ok, true);
+  if (rehashedVerdict.ok) {
+    assert.notEqual(await expectedEntityId(rehashedVerdict.value), built.entityId);
+  }
+
+  const wrongSchema = JSON.parse(built.json);
+  wrongSchema.schemaVersion = 99;
+  assert.equal((await validateGuideExport(JSON.stringify(wrongSchema))).ok, false);
+  assert.equal((await validateGuideExport('not json at all')).ok, false);
+  const missing = JSON.parse(built.json);
+  delete missing.transcriptHash;
+  const missingVerdict = await validateGuideExport(JSON.stringify(missing));
+  assert.equal(missingVerdict.ok, false);
+  assert.ok(missingVerdict.ok === false && missingVerdict.errors.some((e) => e.includes('transcriptHash')));
 });
